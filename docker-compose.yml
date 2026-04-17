@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    container_name: nlp_pipeline
+    volumes:
+      - ./:/app
+      - hf_cache:/root/.cache/huggingface
+    env_file:
+      - .env
+    tty: true
+    stdin_open: true
+    command: python -m src.main --module all
+
+volumes:
+  hf_cache:
