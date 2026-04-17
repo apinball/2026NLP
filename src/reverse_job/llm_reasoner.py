@@ -2,10 +2,18 @@ from __future__ import annotations
 
 import json
 import re
+from typing import Protocol
 
-from anthropic import Anthropic
 
-from src.config import ANTHROPIC_API_KEY, LLM_MODEL
+class LLMClient(Protocol):
+    """Reverse Job Engineering 에 사용할 LLM 의 최소 계약.
+
+    TODO(team): 사용할 LLM(Anthropic / OpenAI / 로컬 HF / Ollama 등) 선정 후
+    이 Protocol 을 만족하는 구현체를 `LLMReasoner` 에 주입한다.
+    """
+
+    def complete(self, prompt: str) -> str: ...
+
 
 COT_PROMPT = """당신은 채용공고를 분석하여 명시되지 않은 암묵적 요구 역량을 추론하는 전문가입니다.
 
@@ -28,34 +36,20 @@ _IMPLICIT_RE = re.compile(r"IMPLICIT:\s*(\[.*?\])", re.DOTALL)
 
 
 class LLMReasoner:
-    """Chain-of-Thought 프롬프팅으로 암묵적 역량을 추론한다."""
+    """Chain-of-Thought 프롬프팅으로 암묵적 역량을 추론한다.
 
-    def __init__(
-        self,
-        model: str = LLM_MODEL,
-        api_key: str | None = None,
-        max_tokens: int = 1024,
-    ) -> None:
-        key = api_key or ANTHROPIC_API_KEY
-        if not key:
-            raise RuntimeError("ANTHROPIC_API_KEY is not configured")
-        self.client = Anthropic(api_key=key)
-        self.model = model
-        self.max_tokens = max_tokens
+    LLM 은 외부에서 `LLMClient` 로 주입받는다. 구현체는 아직 미정.
+    """
+
+    def __init__(self, client: LLMClient) -> None:
+        self.client = client
 
     def infer_implicit(self, job_text: str, explicit_skills: list[str]) -> list[str]:
         prompt = COT_PROMPT.format(
             job_text=job_text.strip(),
             explicit_skills=", ".join(explicit_skills) or "(없음)",
         )
-        message = self.client.messages.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        text = "".join(
-            block.text for block in message.content if getattr(block, "type", "") == "text"
-        )
+        text = self.client.complete(prompt)
         return self._parse(text)
 
     @staticmethod

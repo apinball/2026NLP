@@ -26,14 +26,9 @@ React 16과 Next.js 13을 2015년 프로젝트에 적용했습니다.
 """
 
 
-def demo_reverse_job(use_llm: bool) -> None:
-    reasoner = None
-    if use_llm:
-        from src.reverse_job.llm_reasoner import LLMReasoner
-
-        reasoner = LLMReasoner()
-
-    pipeline = ReverseJobPipeline(reasoner=reasoner, load_ner=False)
+def demo_reverse_job() -> None:
+    # LLMReasoner 는 사용할 LLM 미정이므로 주입하지 않고 ARM 단독으로 데모.
+    pipeline = ReverseJobPipeline(reasoner=None, load_ner=False)
     result = pipeline.run(SAMPLE_JOB, corpus=SAMPLE_CORPUS)
 
     print("=== Reverse Job Engineering ===")
@@ -83,14 +78,13 @@ def main() -> None:
         default="all",
         help="which demo to run",
     )
-    parser.add_argument("--use-llm", action="store_true", help="enable LLM reasoner")
     parser.add_argument(
         "--use-ml", action="store_true", help="enable perplexity-based AI detector"
     )
     args = parser.parse_args()
 
     if args.module in {"rje", "all"}:
-        demo_reverse_job(args.use_llm)
+        demo_reverse_job()
     if args.module in {"audit", "all"}:
         demo_logic_auditor(args.use_ml)
 

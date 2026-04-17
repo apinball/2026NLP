@@ -14,7 +14,7 @@
 │   ├── reverse_job/                   # Module A
 │   │   ├── extractor.py               # 키워드 사전 + KoELECTRA NER
 │   │   ├── arm_miner.py               # Apriori 공동출현 분석
-│   │   ├── llm_reasoner.py            # Anthropic Chain-of-Thought
+│   │   ├── llm_reasoner.py            # Chain-of-Thought (LLM 미정, Protocol 주입)
 │   │   └── pipeline.py
 │   └── logic_auditor/                 # Module B
 │       ├── ontology.py                # TechEntry 인덱스
@@ -27,25 +27,35 @@
 ## 빠른 시작
 
 ```bash
-cp .env.example .env            # ANTHROPIC_API_KEY 채우기 (선택)
+cp .env.example .env
 docker compose build
 docker compose run --rm app                                    # 전체 데모
 docker compose run --rm app python -m src.main --module rje    # Module A만
 docker compose run --rm app python -m src.main --module audit  # Module B만
-docker compose run --rm app python -m src.main --use-llm       # LLM 추론 활성화
+docker compose run --rm app python -m src.main --use-ml        # AI 생성 탐지 활성화
 docker compose run --rm app pytest -q                          # 테스트 실행
 ```
-
-`.env` 의 `ANTHROPIC_API_KEY` 를 비워두면 LLM 추론은 건너뛰고 ARM + Rule 기반 모듈만 동작한다.
 
 ## 설정 항목 (`.env`)
 
 | 변수 | 기본값 | 용도 |
 |------|--------|------|
-| `ANTHROPIC_API_KEY` | — | Module A LLM 추론 |
-| `LLM_MODEL` | `claude-sonnet-4-6` | Anthropic 모델 |
 | `HF_NER_MODEL_KO` | `monologg/koelectra-base-v3-finetuned-naver-ner` | 한국어 NER |
+| `HF_NER_MODEL_EN` | `dslim/bert-base-NER` | 영문 NER |
 | `HF_PPL_MODEL` | `skt/kogpt2-base-v2` | Perplexity 계산 |
+
+## LLM 연동 (미정)
+
+Module A 의 `LLMReasoner` 는 `LLMClient` Protocol 로 LLM 을 외부 주입받는다. 사용할 LLM(Anthropic / OpenAI / 로컬 HF / Ollama 등)이 확정되면 아래 형태의 어댑터를 만들어 주입한다.
+
+```python
+class MyLLM:
+    def complete(self, prompt: str) -> str:
+        ...  # 팀에서 결정한 LLM 호출
+
+from src.reverse_job.llm_reasoner import LLMReasoner
+reasoner = LLMReasoner(client=MyLLM())
+```
 
 ## 파이프라인 요약
 
