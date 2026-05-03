@@ -69,10 +69,14 @@ class Resume:
 
 
 def load_ceragem_positions(path: Path = CERAGEM_PATH) -> list[JobPosting]:
-    """ceragem_job_posting.json 의 27개 position 을 JobPosting 으로 평탄화."""
+    """ceragem_job_posting.json 의 27개 position 을 JobPosting 으로 평탄화.
+
+    job_posting.skills 는 27개 position 전체 union 이라 position 별로 복사하면
+    모든 공고가 같은 스킬셋을 가진 것처럼 ARM 빈출 결과를 왜곡한다 → 여기서는
+    skills 를 비워 두고 raw_text 의 키워드 매칭만으로 추출하게 한다.
+    """
     raw = json.loads(path.read_text(encoding="utf-8"))
     company = raw.get("company", {}).get("name", "")
-    parent_skills = raw.get("job_posting", {}).get("skills", []) or []
     out: list[JobPosting] = []
     for pos in raw.get("positions", []):
         responsibilities = pos.get("responsibilities", []) or []
@@ -87,7 +91,7 @@ def load_ceragem_positions(path: Path = CERAGEM_PATH) -> list[JobPosting]:
                 responsibilities=responsibilities,
                 requirements=requirements,
                 preferred=preferred,
-                skills=list(parent_skills),
+                skills=[],
                 work_location=pos.get("work_location", ""),
                 raw_text="\n".join(
                     [pos.get("job_title", ""), *responsibilities, *requirements, *preferred]

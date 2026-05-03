@@ -18,4 +18,5 @@ data/wanted_raw.jsonl
 .ruff_cache/
 .idea/
 .vscode/
+.claude/
 *.log
