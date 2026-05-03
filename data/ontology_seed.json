@@ -91,5 +91,59 @@
 
   {"name": "아프리카TV", "released_year": 2006, "category": "media-kr", "versions": {}, "aliases": ["AfreecaTV"]},
   {"name": "치지직", "released_year": 2024, "category": "media-kr", "versions": {}, "aliases": ["CHZZK"]},
-  {"name": "멜론", "released_year": 2004, "category": "media-kr", "versions": {}, "aliases": ["Melon"]}
+  {"name": "멜론", "released_year": 2004, "category": "media-kr", "versions": {}, "aliases": ["Melon"]},
+
+  {"name": "잡코리아", "released_year": 1996, "category": "recruit-kr", "versions": {}, "aliases": ["JobKorea"]},
+  {"name": "사람인", "released_year": 2005, "category": "recruit-kr", "versions": {}, "aliases": ["Saramin"]},
+  {"name": "원티드", "released_year": 2010, "category": "recruit-kr", "versions": {}, "aliases": ["Wanted"]},
+  {"name": "링커리어", "released_year": 2015, "category": "recruit-kr", "versions": {}, "aliases": ["Linkareer"]},
+  {"name": "점핏", "released_year": 2021, "category": "recruit-kr", "versions": {}, "aliases": ["Jumpit"]},
+  {"name": "인크루트", "released_year": 1998, "category": "recruit-kr", "versions": {}, "aliases": ["Incruit"]},
+
+  {"name": "인프런", "released_year": 2015, "category": "education-kr", "versions": {}, "aliases": ["Inflearn"]},
+  {"name": "패스트캠퍼스", "released_year": 2014, "category": "education-kr", "versions": {}, "aliases": ["Fastcampus"]},
+  {"name": "코드잇", "released_year": 2017, "category": "education-kr", "versions": {}, "aliases": ["Codeit"]},
+  {"name": "프로그래머스", "released_year": 2015, "category": "education-kr", "versions": {}, "aliases": ["Programmers"]},
+  {"name": "부스트코스", "released_year": 2018, "category": "education-kr", "versions": {}, "aliases": ["BoostCourse"]},
+  {"name": "클래스101", "released_year": 2018, "category": "education-kr", "versions": {}, "aliases": ["Class101"]},
+
+  {"name": "카카오뱅크", "released_year": 2017, "category": "fintech-kr", "versions": {}, "aliases": ["KakaoBank"]},
+  {"name": "토스뱅크", "released_year": 2021, "category": "fintech-kr", "versions": {}, "aliases": ["TossBank"]},
+  {"name": "케이뱅크", "released_year": 2017, "category": "fintech-kr", "versions": {}, "aliases": ["K뱅크", "KBank"]},
+  {"name": "토스증권", "released_year": 2021, "category": "fintech-kr", "versions": {}, "aliases": ["TossSecurities"]},
+  {"name": "카카오페이증권", "released_year": 2020, "category": "fintech-kr", "versions": {}, "aliases": ["KakaoPaySecurities"]},
+  {"name": "뱅크샐러드", "released_year": 2014, "category": "fintech-kr", "versions": {}, "aliases": ["BankSalad"]},
+  {"name": "핀크", "released_year": 2016, "category": "fintech-kr", "versions": {}, "aliases": ["Finnq"]},
+
+  {"name": "메이플스토리", "released_year": 2003, "category": "game-kr", "versions": {}, "aliases": ["MapleStory"]},
+  {"name": "던전앤파이터", "released_year": 2005, "category": "game-kr", "versions": {}, "aliases": ["DNF", "Dungeon Fighter"]},
+  {"name": "로스트아크", "released_year": 2018, "category": "game-kr", "versions": {}, "aliases": ["Lost Ark"]},
+  {"name": "배틀그라운드", "released_year": 2017, "category": "game-kr", "versions": {}, "aliases": ["PUBG", "배그"]},
+  {"name": "리그 오브 레전드", "released_year": 2009, "category": "game", "versions": {}, "aliases": ["League of Legends", "LoL"]},
+
+  {"name": "디시인사이드", "released_year": 1999, "category": "community-kr", "versions": {}, "aliases": ["DCInside"]},
+  {"name": "클리앙", "released_year": 2000, "category": "community-kr", "versions": {}, "aliases": ["Clien"]},
+  {"name": "에브리타임", "released_year": 2010, "category": "community-kr", "versions": {}, "aliases": ["Everytime"]},
+  {"name": "다음카페", "released_year": 1999, "category": "community-kr", "versions": {}, "aliases": ["Daum Cafe"]},
+
+  {"name": "Trello", "released_year": 2011, "category": "saas", "versions": {}, "aliases": ["트렐로"]},
+  {"name": "Figma", "released_year": 2016, "category": "saas", "versions": {}, "aliases": ["피그마"]},
+  {"name": "Postman", "released_year": 2014, "category": "saas", "versions": {"10.0": 2022}, "aliases": ["포스트맨"]},
+  {"name": "Adobe XD", "released_year": 2016, "category": "saas", "versions": {}, "aliases": []},
+  {"name": "Webflow", "released_year": 2013, "category": "saas", "versions": {}, "aliases": []},
+
+  {"name": "VS Code", "released_year": 2015, "category": "editor", "versions": {}, "aliases": ["Visual Studio Code", "VSCode"]},
+  {"name": "IntelliJ IDEA", "released_year": 2001, "category": "editor", "versions": {}, "aliases": ["IntelliJ"]},
+  {"name": "PyCharm", "released_year": 2010, "category": "editor", "versions": {}, "aliases": []},
+  {"name": "Eclipse", "released_year": 2001, "category": "editor", "versions": {}, "aliases": []},
+
+  {"name": "Maven", "released_year": 2004, "category": "build", "versions": {"3.0": 2010}, "aliases": []},
+  {"name": "Gradle", "released_year": 2007, "category": "build", "versions": {"7.0": 2021, "8.0": 2023}, "aliases": []},
+  {"name": "Tomcat", "released_year": 1999, "category": "backend", "versions": {"9": 2018, "10": 2020}, "aliases": ["Apache Tomcat"]},
+  {"name": "Nginx", "released_year": 2004, "category": "backend", "versions": {}, "aliases": []},
+  {"name": "Apache HTTP Server", "released_year": 1995, "category": "backend", "versions": {}, "aliases": ["Apache"]},
+
+  {"name": "전자정부 표준프레임워크", "released_year": 2009, "category": "stack-kr", "versions": {"3.5": 2015, "4.0": 2021}, "aliases": ["eGovFrame", "전자정부프레임워크"]},
+  {"name": "홈택스", "released_year": 2002, "category": "gov-kr", "versions": {}, "aliases": ["Hometax"]},
+  {"name": "위택스", "released_year": 2005, "category": "gov-kr", "versions": {}, "aliases": ["Wetax"]}
 ]
