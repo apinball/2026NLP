@@ -8,6 +8,7 @@ from pathlib import Path
 from src.config import DATA_DIR
 
 CERAGEM_PATH = DATA_DIR / "ceragem_job_posting.json"
+WANTED_JOBS_PATH = DATA_DIR / "wanted_jobs.jsonl"
 LINKAREER_PARSED = DATA_DIR / "linkareer_cover_letter_parsed.jsonl"
 NAVER_PARSED = DATA_DIR / "naver_cafe_passassay_parsed.jsonl"
 
@@ -100,10 +101,37 @@ def load_ceragem_positions(path: Path = CERAGEM_PATH) -> list[JobPosting]:
     return out
 
 
+def iter_wanted_jobs(path: Path = WANTED_JOBS_PATH) -> Iterator[JobPosting]:
+    """scripts/crawl_wanted.py 가 작성한 JobPosting jsonl 을 순회."""
+    if not path.exists():
+        return
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            d = json.loads(line)
+            yield JobPosting(
+                source=d.get("source", "wanted"),
+                company=d.get("company", "") or "",
+                category=d.get("category", "") or "",
+                job_title=d.get("job_title", "") or "",
+                responsibilities=list(d.get("responsibilities") or []),
+                requirements=list(d.get("requirements") or []),
+                preferred=list(d.get("preferred") or []),
+                skills=list(d.get("skills") or []),
+                work_location=d.get("work_location", "") or "",
+                raw_text=d.get("raw_text", "") or "",
+                meta=dict(d.get("meta") or {}),
+            )
+
+
 def iter_jobs() -> Iterator[JobPosting]:
-    """현재 보유한 모든 소스의 JobPosting 을 순회. 추후 크롤러 추가 시 확장."""
+    """현재 보유한 모든 소스의 JobPosting 을 순회."""
     if CERAGEM_PATH.exists():
         yield from load_ceragem_positions()
+    if WANTED_JOBS_PATH.exists():
+        yield from iter_wanted_jobs()
 
 
 def _parse_pass_spec(raw: dict) -> PassSpec:

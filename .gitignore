@@ -11,6 +11,8 @@ data/linkareer_cover_letter_parsed.jsonl
 data/linkareer_cover_letter_raw.jsonl
 data/naver_cafe_passassay_parsed.jsonl
 data/naver_cafe_passassay_raw.jsonl
+data/wanted_jobs.jsonl
+data/wanted_raw.jsonl
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
