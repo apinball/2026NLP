@@ -9,33 +9,49 @@ import argparse
 import json
 from collections import Counter
 
-from src.data.loaders import iter_jobs
+from src.data.job_category import normalize_job
+from src.data.loaders import JobPosting, iter_jobs
 from src.reverse_job.arm_miner import ARMMiner
-from src.reverse_job.extractor import find_tech_keywords
+from src.reverse_job.extractor import find_tech_keywords, normalize_skill_token
+
+IT_CATEGORIES = {"IT/개발", "R&D"}
 
 
-def build_transactions(min_skills: int = 2) -> list[list[str]]:
-    """JobPosting → transaction list. requirements/responsibilities 본문 + API skills 결합."""
+def job_skills(job: JobPosting) -> list[str]:
+    """JobPosting → 표준화된 스킬 토큰 집합."""
+    text = " ".join(
+        [
+            job.raw_text,
+            " ".join(job.responsibilities),
+            " ".join(job.requirements),
+            " ".join(job.preferred),
+        ]
+    )
+    skills = set(find_tech_keywords(text))
+    for s in job.skills:
+        norm = normalize_skill_token(s)
+        if norm:
+            skills.add(norm)
+    return sorted(skills)
+
+
+def is_it_job(job: JobPosting) -> bool:
+    """직무명·카테고리로 IT/R&D 직군인지 판정."""
+    if normalize_job(job.category) in IT_CATEGORIES:
+        return True
+    if normalize_job(job.job_title) in IT_CATEGORIES:
+        return True
+    return False
+
+
+def build_transactions(min_skills: int = 2, it_only: bool = False) -> list[list[str]]:
     transactions: list[list[str]] = []
     for job in iter_jobs():
-        text = " ".join(
-            [
-                job.raw_text,
-                " ".join(job.responsibilities),
-                " ".join(job.requirements),
-                " ".join(job.preferred),
-                " ".join(job.skills),
-            ]
-        )
-        skills = find_tech_keywords(text)
-        # API skill_tags 도 합쳐 표준 키로 정규화
-        for s in job.skills:
-            normalized = s.lower().strip()
-            if normalized and normalized not in skills:
-                # extractor 에 없는 항목은 그대로 추가
-                skills.append(normalized)
+        if it_only and not is_it_job(job):
+            continue
+        skills = job_skills(job)
         if len(skills) >= min_skills:
-            transactions.append(sorted(set(skills)))
+            transactions.append(skills)
     return transactions
 
 
@@ -45,10 +61,13 @@ def main() -> None:
     ap.add_argument("--min-confidence", type=float, default=0.5)
     ap.add_argument("--top-rules", type=int, default=20)
     ap.add_argument("--target", default="python", help="암묵적 역량 추출 기준 스킬")
+    ap.add_argument(
+        "--it-only", action="store_true", help="IT/개발·R&D 직무만 코퍼스로 사용"
+    )
     args = ap.parse_args()
 
-    transactions = build_transactions()
-    print(f"transactions: {len(transactions)}")
+    transactions = build_transactions(it_only=args.it_only)
+    print(f"transactions: {len(transactions)} (it_only={args.it_only})")
     if not transactions:
         return
 
@@ -68,7 +87,9 @@ def main() -> None:
         print("(no rules at given thresholds — try lower min-support)")
         return
 
-    rules = rules.sort_values(["confidence", "lift"], ascending=False).head(args.top_rules)
+    rules = rules.sort_values(["confidence", "lift"], ascending=False).head(
+        args.top_rules
+    )
     print(f"\n--- top {len(rules)} rules ---")
     for _, row in rules.iterrows():
         ant = sorted(row["antecedents"])

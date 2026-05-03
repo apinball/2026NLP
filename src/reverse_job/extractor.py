@@ -19,6 +19,40 @@ TECH_KEYWORDS: set[str] = {
     "kafka", "rabbitmq", "airflow", "spark", "hadoop",
 }
 
+# 표기 변형 → 표준 토큰 매핑. wanted API skill_tags 같이 외부에서 들어오는
+# 자유서식 스킬명을 ARM 등에서 합치기 위한 정규화 테이블.
+SKILL_ALIASES: dict[str, str] = {
+    "spring framework": "spring",
+    "spring-boot": "spring boot",
+    "springboot": "spring boot",
+    "react.js": "react",
+    "reactjs": "react",
+    "react native": "react",
+    "vue.js": "vue",
+    "vuejs": "vue",
+    "nextjs": "next.js",
+    "next js": "next.js",
+    "node": "node.js",
+    "nodejs": "node.js",
+    "k8s": "kubernetes",
+    "postgres": "postgresql",
+    "scikit learn": "scikit-learn",
+    "sklearn": "scikit-learn",
+    "tf": "tensorflow",
+    "amazon web services": "aws",
+    "google cloud": "gcp",
+    "google cloud platform": "gcp",
+}
+
+
+def normalize_skill_token(raw: str) -> str:
+    """외부 입력 스킬 문자열을 SKILL_ALIASES + lower 로 정규화."""
+    if not raw:
+        return ""
+    norm = raw.lower().strip()
+    return SKILL_ALIASES.get(norm, norm)
+
+
 EXPERIENCE_RE = re.compile(r"(\d+)\s*년\s*(?:이상|이하|차)?")
 
 
