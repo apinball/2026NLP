@@ -5,7 +5,12 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from src.data.loaders import Resume, iter_resumes
-from src.reverse_job.extractor import TECH_KEYWORDS
+from src.reverse_job.extractor import (
+    KEYWORD_REGEX,
+    TECH_KEYWORDS,
+    build_keyword_regex,
+    find_tech_keywords,
+)
 
 
 @dataclass
@@ -41,19 +46,17 @@ def build_skill_index(
 ) -> SkillIndex:
     if resumes is None:
         resumes = iter_resumes()
-    keywords = [k.lower() for k in (vocab or TECH_KEYWORDS)]
+    if vocab is None:
+        regex = KEYWORD_REGEX
+    else:
+        regex = build_keyword_regex(vocab)
 
     idx = SkillIndex()
     for resume in resumes:
-        text = (resume.full_text + " " + resume.pass_spec.certifications).lower()
+        text = resume.full_text + " " + resume.pass_spec.certifications
         if not text.strip():
             continue
         idx.total_docs += 1
-        seen: set[str] = set()
-        for kw in keywords:
-            if kw in seen:
-                continue
-            if kw in text:
-                idx.counts[kw] += 1
-                seen.add(kw)
+        for kw in find_tech_keywords(text, regex):
+            idx.counts[kw] += 1
     return idx

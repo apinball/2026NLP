@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
 from src.config import HF_NER_MODEL_KO
 
 TECH_KEYWORDS: set[str] = {
-    "python", "java", "javascript", "typescript", "go", "golang", "rust", "kotlin",
+    "python", "java", "javascript", "typescript", "golang", "rust", "kotlin",
     "react", "vue", "angular", "next.js", "nuxt", "svelte",
     "spring", "spring boot", "django", "flask", "fastapi", "node.js", "express",
     "mysql", "postgresql", "postgres", "mongodb", "redis", "elasticsearch", "oracle",
@@ -19,6 +20,35 @@ TECH_KEYWORDS: set[str] = {
 }
 
 EXPERIENCE_RE = re.compile(r"(\d+)\s*년\s*(?:이상|이하|차)?")
+
+
+def build_keyword_regex(keywords: Iterable[str]) -> re.Pattern[str]:
+    """ASCII 단어 경계 가드를 적용한 키워드 매칭 regex.
+
+    `\\b` 는 한국어 텍스트(예: "Python을")에서는 동작하지 않으므로
+    영문/숫자가 아닌 문자만 경계로 인정하는 lookaround 를 사용한다.
+    이렇게 해야 "going" 안에서 "go" 를 거짓 매칭하지 않으면서
+    "Python을" 의 "python" 은 정상 매칭된다.
+    """
+    sorted_kws = sorted({k.lower() for k in keywords if k}, key=len, reverse=True)
+    if not sorted_kws:
+        return re.compile(r"(?!x)x")
+    escaped = "|".join(re.escape(k) for k in sorted_kws)
+    return re.compile(
+        rf"(?<![a-zA-Z0-9])({escaped})(?![a-zA-Z0-9])",
+        re.IGNORECASE,
+    )
+
+
+KEYWORD_REGEX = build_keyword_regex(TECH_KEYWORDS)
+
+
+def find_tech_keywords(text: str, regex: re.Pattern[str] | None = None) -> list[str]:
+    pattern = regex or KEYWORD_REGEX
+    hits: set[str] = set()
+    for m in pattern.finditer(text):
+        hits.add(m.group(1).lower())
+    return sorted(hits)
 
 
 @dataclass
@@ -54,7 +84,7 @@ class JobExtractor:
 
     def extract(self, text: str) -> JobRequirements:
         req = JobRequirements()
-        req.tech_stack = self._match_keywords(text)
+        req.tech_stack = find_tech_keywords(text)
         req.experience_years = [int(m.group(1)) for m in EXPERIENCE_RE.finditer(text)]
 
         if self._ner is not None:
@@ -69,12 +99,3 @@ class JobExtractor:
                     req.qualifications.append(word)
 
         return req
-
-    @staticmethod
-    def _match_keywords(text: str) -> list[str]:
-        lowered = text.lower()
-        hits: list[str] = []
-        for kw in sorted(TECH_KEYWORDS, key=len, reverse=True):
-            if kw in lowered and kw not in hits:
-                hits.append(kw)
-        return sorted(hits)
