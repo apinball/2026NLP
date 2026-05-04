@@ -33,8 +33,8 @@ React 16과 Next.js 13을 2015년 프로젝트에 적용했습니다.
 
 
 @st.cache_data
-def load_arm_corpus() -> list[list[str]]:
-    """IT 직무 채용공고 → ARM transactions. 시작 시 1회 빌드."""
+def load_arm_transactions() -> list[list[str]]:
+    """IT 직무 채용공고 → 이미 스킬 추출된 ARM transactions. 시작 시 1회 빌드."""
     from scripts.run_arm import is_it_job, job_skills
 
     return [
@@ -196,7 +196,7 @@ def main() -> None:
         return
 
     with st.spinner("ARM 코퍼스 로딩…"):
-        corpus = load_arm_corpus()
+        transactions = load_arm_transactions()
 
     if use_llm:
         client = OllamaLLMClient(model=llm_model)
@@ -211,7 +211,9 @@ def main() -> None:
 
     with st.spinner("분석 중…"):
         try:
-            report = pipeline.run(job_text, resume_text, corpus=corpus)
+            report = pipeline.run(
+                job_text, resume_text, transactions=transactions
+            )
         except Exception as e:
             st.error(f"분석 실패: {e}")
             return

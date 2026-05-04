@@ -69,8 +69,11 @@ class IntegrationPipeline:
         job_text: str,
         resume_text: str,
         corpus: list[str] | None = None,
+        transactions: list[list[str]] | None = None,
     ) -> IntegrationReport:
-        analysis = self.reverse_job.run(job_text, corpus=corpus)
+        analysis = self.reverse_job.run(
+            job_text, corpus=corpus, transactions=transactions
+        )
         audit_report = self.audit.run(resume_text)
 
         required = set(analysis.explicit.tech_stack) | set(analysis.implicit_union)

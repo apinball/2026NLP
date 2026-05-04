@@ -33,14 +33,18 @@ class ReverseJobPipeline:
         self,
         target_job: str,
         corpus: list[str] | None = None,
+        transactions: list[list[str]] | None = None,
     ) -> ReverseJobResult:
+        """corpus 는 raw 채용공고 텍스트 리스트, transactions 는 이미 추출된
+        스킬 리스트들. 둘 중 하나만 제공해도 되며, transactions 가 우선."""
         target_req = self.extractor.extract(target_job)
 
         implicit_arm: list[str] = []
-        if corpus:
+        if transactions is None and corpus:
             transactions = [
                 self.extractor.extract(doc).tech_stack for doc in corpus
             ]
+        if transactions:
             rules = self.miner.mine(transactions)
             implicit_arm = self.miner.find_implicit(
                 set(target_req.tech_stack), rules
