@@ -29,6 +29,21 @@ services:
               capabilities: [gpu]
     restart: unless-stopped
 
+  demo:
+    build: .
+    container_name: nlp_demo
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./:/app
+      - hf_cache:/root/.cache/huggingface
+    env_file:
+      - .env
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      PYTHONPATH: /app
+    command: streamlit run src/demo/app.py --server.address 0.0.0.0 --server.port 8501
+
 volumes:
   hf_cache:
   ollama_models:
