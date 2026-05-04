@@ -14,6 +14,7 @@ data/naver_cafe_passassay_raw.jsonl
 data/wanted_jobs.jsonl
 data/wanted_raw.jsonl
 data/synthetic_resumes.jsonl
+data/eval_module_a.jsonl
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
