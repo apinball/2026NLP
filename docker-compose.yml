@@ -7,9 +7,28 @@ services:
       - hf_cache:/root/.cache/huggingface
     env_file:
       - .env
+    environment:
+      OLLAMA_HOST: http://ollama:11434
     tty: true
     stdin_open: true
     command: python -m src.main --module all
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: nlp_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
 volumes:
   hf_cache:
+  ollama_models:
