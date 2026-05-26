@@ -1,0 +1,12 @@
+# API 키 
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 가상환경
+venv/
+.venv/
+env/

@@ -1,0 +1,10 @@
+# 환경변수
+python-dotenv
+
+# LLM 어댑터
+groq
+google-generativeai  # GeminiAdapter 사용 시
+
+# NLP
+transformers
+torch

@@ -1,0 +1,661 @@
+[
+  {
+    "name": "Docker",
+    "released_year": 2013,
+    "category": "container",
+    "versions": {
+      "1.0": 2014,
+      "20.10": 2020
+    },
+    "aliases": []
+  },
+  {
+    "name": "Kubernetes",
+    "released_year": 2014,
+    "category": "orchestration",
+    "versions": {
+      "1.0": 2015
+    },
+    "aliases": [
+      "k8s"
+    ]
+  },
+  {
+    "name": "React",
+    "released_year": 2013,
+    "category": "frontend",
+    "versions": {
+      "16": 2017,
+      "17": 2020,
+      "18": 2022
+    },
+    "aliases": [
+      "React.js",
+      "ReactJS"
+    ]
+  },
+  {
+    "name": "Next.js",
+    "released_year": 2016,
+    "category": "frontend",
+    "versions": {
+      "12": 2021,
+      "13": 2022,
+      "14": 2023
+    },
+    "aliases": [
+      "NextJS"
+    ]
+  },
+  {
+    "name": "Vue",
+    "released_year": 2014,
+    "category": "frontend",
+    "versions": {
+      "3": 2020
+    },
+    "aliases": [
+      "Vue.js",
+      "VueJS"
+    ]
+  },
+  {
+    "name": "Angular",
+    "released_year": 2010,
+    "category": "frontend",
+    "versions": {
+      "2": 2016,
+      "15": 2022
+    },
+    "aliases": [
+      "Angular.js",
+      "AngularJS"
+    ]
+  },
+  {
+    "name": "Svelte",
+    "released_year": 2016,
+    "category": "frontend",
+    "versions": {
+      "3": 2019
+    },
+    "aliases": []
+  },
+  {
+    "name": "FastAPI",
+    "released_year": 2018,
+    "category": "backend",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "Django",
+    "released_year": 2005,
+    "category": "backend",
+    "versions": {
+      "3.0": 2019,
+      "4.0": 2021
+    },
+    "aliases": []
+  },
+  {
+    "name": "Flask",
+    "released_year": 2010,
+    "category": "backend",
+    "versions": {
+      "2.0": 2021
+    },
+    "aliases": []
+  },
+  {
+    "name": "Spring Boot",
+    "released_year": 2014,
+    "category": "backend",
+    "versions": {
+      "3.0": 2022
+    },
+    "aliases": [
+      "SpringBoot"
+    ]
+  },
+  {
+    "name": "Node.js",
+    "released_year": 2009,
+    "category": "backend",
+    "versions": {
+      "18": 2022,
+      "20": 2023
+    },
+    "aliases": [
+      "NodeJS"
+    ]
+  },
+  {
+    "name": "TypeScript",
+    "released_year": 2012,
+    "category": "language",
+    "versions": {
+      "4.0": 2020,
+      "5.0": 2023
+    },
+    "aliases": []
+  },
+  {
+    "name": "Rust",
+    "released_year": 2010,
+    "category": "language",
+    "versions": {
+      "1.0": 2015
+    },
+    "aliases": []
+  },
+  {
+    "name": "Go",
+    "released_year": 2009,
+    "category": "language",
+    "versions": {
+      "1.0": 2012
+    },
+    "aliases": [
+      "Golang"
+    ]
+  },
+  {
+    "name": "Kotlin",
+    "released_year": 2011,
+    "category": "language",
+    "versions": {
+      "1.0": 2016
+    },
+    "aliases": []
+  },
+  {
+    "name": "Python",
+    "released_year": 1991,
+    "category": "language",
+    "versions": {
+      "3.0": 2008,
+      "3.10": 2021,
+      "3.11": 2022,
+      "3.12": 2023
+    },
+    "aliases": []
+  },
+  {
+    "name": "PostgreSQL",
+    "released_year": 1996,
+    "category": "database",
+    "versions": {
+      "13": 2020,
+      "15": 2022
+    },
+    "aliases": [
+      "Postgres"
+    ]
+  },
+  {
+    "name": "MySQL",
+    "released_year": 1995,
+    "category": "database",
+    "versions": {
+      "8.0": 2018
+    },
+    "aliases": []
+  },
+  {
+    "name": "MongoDB",
+    "released_year": 2009,
+    "category": "database",
+    "versions": {
+      "5.0": 2021,
+      "6.0": 2022
+    },
+    "aliases": []
+  },
+  {
+    "name": "Redis",
+    "released_year": 2009,
+    "category": "database",
+    "versions": {
+      "7.0": 2022
+    },
+    "aliases": []
+  },
+  {
+    "name": "Elasticsearch",
+    "released_year": 2010,
+    "category": "database",
+    "versions": {
+      "8.0": 2022
+    },
+    "aliases": []
+  },
+  {
+    "name": "TensorFlow",
+    "released_year": 2015,
+    "category": "ml",
+    "versions": {
+      "2.0": 2019
+    },
+    "aliases": [
+      "Tensorflow"
+    ]
+  },
+  {
+    "name": "PyTorch",
+    "released_year": 2016,
+    "category": "ml",
+    "versions": {
+      "2.0": 2023
+    },
+    "aliases": []
+  },
+  {
+    "name": "Transformers",
+    "released_year": 2018,
+    "category": "ml",
+    "versions": {
+      "4.0": 2020
+    },
+    "aliases": []
+  },
+  {
+    "name": "GraphQL",
+    "released_year": 2015,
+    "category": "api",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "gRPC",
+    "released_year": 2015,
+    "category": "api",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "Kafka",
+    "released_year": 2011,
+    "category": "messaging",
+    "versions": {
+      "3.0": 2021
+    },
+    "aliases": []
+  },
+  {
+    "name": "AWS",
+    "released_year": 2006,
+    "category": "cloud",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "GCP",
+    "released_year": 2008,
+    "category": "cloud",
+    "versions": {},
+    "aliases": [
+      "Google Cloud"
+    ]
+  },
+  {
+    "name": "Notion",
+    "released_year": 2016,
+    "category": "saas",
+    "versions": {},
+    "aliases": [
+      "노션"
+    ]
+  },
+  {
+    "name": "Slack",
+    "released_year": 2013,
+    "category": "saas",
+    "versions": {},
+    "aliases": [
+      "슬랙"
+    ]
+  },
+  {
+    "name": "Jira",
+    "released_year": 2002,
+    "category": "saas",
+    "versions": {},
+    "aliases": [
+      "지라"
+    ]
+  },
+  {
+    "name": "Confluence",
+    "released_year": 2004,
+    "category": "saas",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "Figma",
+    "released_year": 2016,
+    "category": "saas",
+    "versions": {},
+    "aliases": [
+      "피그마"
+    ]
+  },
+  {
+    "name": "Postman",
+    "released_year": 2014,
+    "category": "saas",
+    "versions": {
+      "10.0": 2022
+    },
+    "aliases": [
+      "포스트맨"
+    ]
+  },
+  {
+    "name": "Adobe XD",
+    "released_year": 2016,
+    "category": "saas",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "VS Code",
+    "released_year": 2015,
+    "category": "editor",
+    "versions": {},
+    "aliases": [
+      "Visual Studio Code",
+      "VSCode"
+    ]
+  },
+  {
+    "name": "IntelliJ IDEA",
+    "released_year": 2001,
+    "category": "editor",
+    "versions": {},
+    "aliases": [
+      "IntelliJ"
+    ]
+  },
+  {
+    "name": "PyCharm",
+    "released_year": 2010,
+    "category": "editor",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "Maven",
+    "released_year": 2004,
+    "category": "build",
+    "versions": {
+      "3.0": 2010
+    },
+    "aliases": []
+  },
+  {
+    "name": "Gradle",
+    "released_year": 2007,
+    "category": "build",
+    "versions": {
+      "7.0": 2021,
+      "8.0": 2023
+    },
+    "aliases": []
+  },
+  {
+    "name": "Nginx",
+    "released_year": 2004,
+    "category": "backend",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "Java",
+    "released_year": 1995,
+    "category": "language",
+    "versions": {
+      "8": 2014,
+      "11": 2018,
+      "17": 2021
+    },
+    "aliases": []
+  },
+  {
+    "name": "JavaScript",
+    "released_year": 1995,
+    "category": "language",
+    "versions": {},
+    "aliases": [
+      "JS"
+    ]
+  },
+  {
+    "name": "Swift",
+    "released_year": 2014,
+    "category": "language",
+    "versions": {
+      "5.0": 2019
+    },
+    "aliases": []
+  },
+  {
+    "name": "C++",
+    "released_year": 1985,
+    "category": "language",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "C#",
+    "released_year": 2000,
+    "category": "language",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "PHP",
+    "released_year": 1994,
+    "category": "language",
+    "versions": {
+      "8.0": 2020
+    },
+    "aliases": []
+  },
+  {
+    "name": "SQL",
+    "released_year": 1974,
+    "category": "language",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "HTML",
+    "released_year": 1993,
+    "category": "frontend",
+    "versions": {
+      "5": 2014
+    },
+    "aliases": [
+      "HTML5"
+    ]
+  },
+  {
+    "name": "CSS",
+    "released_year": 1996,
+    "category": "frontend",
+    "versions": {
+      "3": 2011
+    },
+    "aliases": [
+      "CSS3"
+    ]
+  },
+  {
+    "name": "Spring Framework",
+    "released_year": 2002,
+    "category": "backend",
+    "versions": {
+      "6.0": 2022
+    },
+    "aliases": [
+      "Spring"
+    ]
+  },
+  {
+    "name": "Flutter",
+    "released_year": 2018,
+    "category": "mobile",
+    "versions": {
+      "3.0": 2022
+    },
+    "aliases": []
+  },
+  {
+    "name": "React Native",
+    "released_year": 2015,
+    "category": "mobile",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "Android",
+    "released_year": 2008,
+    "category": "mobile",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "iOS",
+    "released_year": 2007,
+    "category": "mobile",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "Linux",
+    "released_year": 1991,
+    "category": "os",
+    "versions": {},
+    "aliases": [
+      "Ubuntu",
+      "CentOS"
+    ]
+  },
+  {
+    "name": "Git",
+    "released_year": 2005,
+    "category": "devtools",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "GitHub",
+    "released_year": 2008,
+    "category": "devtools",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "Oracle",
+    "released_year": 1979,
+    "category": "database",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "RDBMS",
+    "released_year": 1970,
+    "category": "database",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "Adobe Photoshop",
+    "released_year": 1990,
+    "category": "design",
+    "versions": {},
+    "aliases": [
+      "Photoshop"
+    ]
+  },
+  {
+    "name": "Adobe Illustrator",
+    "released_year": 1987,
+    "category": "design",
+    "versions": {},
+    "aliases": [
+      "Illustrator"
+    ]
+  },
+  {
+    "name": "Adobe Premiere",
+    "released_year": 1991,
+    "category": "design",
+    "versions": {},
+    "aliases": [
+      "Premiere Pro"
+    ]
+  },
+  {
+    "name": "After Effect",
+    "released_year": 1993,
+    "category": "design",
+    "versions": {},
+    "aliases": [
+      "After Effects"
+    ]
+  },
+  {
+    "name": "Sketch",
+    "released_year": 2010,
+    "category": "design",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "Zeplin",
+    "released_year": 2015,
+    "category": "design",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "Final Cut Studio",
+    "released_year": 1999,
+    "category": "design",
+    "versions": {},
+    "aliases": [
+      "Final Cut Pro"
+    ]
+  },
+  {
+    "name": "JIRA",
+    "released_year": 2002,
+    "category": "saas",
+    "versions": {},
+    "aliases": []
+  },
+  {
+    "name": "Microsoft 365",
+    "released_year": 2011,
+    "category": "saas",
+    "versions": {},
+    "aliases": [
+      "Office 365",
+      "Excel",
+      "Word",
+      "PowerPoint"
+    ]
+  },
+  {
+    "name": "Google Analytics",
+    "released_year": 2005,
+    "category": "analytics",
+    "versions": {},
+    "aliases": [
+      "GA"
+    ]
+  }
+]
