@@ -1,15 +1,13 @@
-"""Module B 의 ML 축 — KLUE-RoBERTa 일관성 분류기 학습.
+"""Module B 의 ML 축 — KLUE-RoBERTa 일관성 분류기 학습 (문서 단위).
 
-합성 이력서를 문장 단위로 분해해 "위반 포함" / "정상" 이진 분류 학습.
-의도된 모순(연도+기술명 동시 등장)을 BERT 가 일반화해서 잡는지 평가.
+합성 이력서 전체 본문을 입력으로 정상 vs 위반 이진 분류 학습.
+이전 문장 단위 학습은 (a) 다양한 위반 유형 중 일부 패턴이 한 문장 안에 안 들어옴,
+(b) indirect_time 같은 cross-sentence 모순을 학습 불가 → 문서 단위로 전환.
 
 사용:
   docker compose run --rm app bash -c \\
     "cd /app && PYTHONPATH=. python scripts/train_bert_classifier.py \\
      --input data/synthetic_resumes.jsonl --epochs 3"
-
-전제: 합성 이력서 jsonl 이 존재해야 함.
-  python scripts/gen_synthetic_resumes.py --normal 500 --error 500
 """
 from __future__ import annotations
 
@@ -18,7 +16,6 @@ import json
 import random
 import sys
 from pathlib import Path
-from typing import Iterable
 
 import numpy as np
 import torch
@@ -39,8 +36,6 @@ from transformers import (
     TrainingArguments,
 )
 
-from src.logic_auditor.rule_based import _SENT_SPLIT
-
 
 def load_records(path: Path) -> list[dict]:
     out: list[dict] = []
@@ -52,52 +47,8 @@ def load_records(path: Path) -> list[dict]:
     return out
 
 
-def split_sentences(text: str) -> list[str]:
-    return [s.strip() for s in _SENT_SPLIT.split(text) if s.strip()]
-
-
-def build_sentence_examples(
-    records: Iterable[dict],
-) -> tuple[list[str], list[int], list[dict]]:
-    """문장 단위 (text, label) 쌍 생성.
-
-    label=1 if 문장에 (tech name) + (claimed_year) 가 동시에 등장 → 위반 문장
-    label=0 그 외 모든 문장 (정상 문서의 모든 문장 + error 문서 중 비-위반 문장)
-    """
-    texts: list[str] = []
-    labels: list[int] = []
-    meta: list[dict] = []
-
-    for rec in records:
-        sentences = split_sentences(rec.get("text", ""))
-        violations = rec.get("violations") or []
-
-        for sent in sentences:
-            is_violation = False
-            matched_tech = None
-            if rec.get("kind") == "error":
-                for v in violations:
-                    tech = (v.get("tech") or "").lower()
-                    year = str(v.get("claimed_year") or "")
-                    if tech and year and tech in sent.lower() and year in sent:
-                        is_violation = True
-                        matched_tech = v.get("tech")
-                        break
-            texts.append(sent)
-            labels.append(1 if is_violation else 0)
-            meta.append(
-                {
-                    "kind": rec.get("kind"),
-                    "doc_tech": rec.get("tech"),
-                    "matched_tech": matched_tech,
-                }
-            )
-
-    return texts, labels, meta
-
-
-class SentenceDataset(Dataset):
-    def __init__(self, texts, labels, tokenizer, max_length=128):
+class DocumentDataset(Dataset):
+    def __init__(self, texts, labels, tokenizer, max_length=256):
         self.texts = list(texts)
         self.labels = list(labels)
         self.tokenizer = tokenizer
@@ -137,24 +88,20 @@ def main() -> int:
     ap.add_argument("--model-name", default="klue/roberta-base")
     ap.add_argument("--output-dir", type=Path, default=Path("data/bert_classifier"))
     ap.add_argument("--epochs", type=int, default=3)
-    ap.add_argument("--batch-size", type=int, default=16)
+    ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--lr", type=float, default=2e-5)
-    ap.add_argument("--max-length", type=int, default=128)
+    ap.add_argument("--max-length", type=int, default=256)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument(
         "--save-splits",
         type=Path,
         default=Path("data/bert_splits.json"),
-        help="train/val/test 분할 텍스트와 라벨을 저장 (eval 재현용)",
+        help="train/val/test 분할 인덱스 + error_type 메타 저장",
     )
     args = ap.parse_args()
 
     if not args.input.exists():
         print(f"missing: {args.input}", file=sys.stderr)
-        print(
-            "  python scripts/gen_synthetic_resumes.py --normal 500 --error 500",
-            file=sys.stderr,
-        )
         return 1
 
     random.seed(args.seed)
@@ -163,34 +110,55 @@ def main() -> int:
 
     print(f"[1/5] {args.input} 로딩…")
     records = load_records(args.input)
-    print(f"      레코드 {len(records)} (normal {sum(1 for r in records if r.get('kind')=='normal')} "
-          f"/ error {sum(1 for r in records if r.get('kind')=='error')})")
+    n_normal = sum(1 for r in records if r.get("kind") == "normal")
+    n_error = sum(1 for r in records if r.get("kind") == "error")
+    print(f"      레코드 {len(records)} (normal {n_normal} / error {n_error})")
 
-    print("[2/5] 문장 단위 데이터셋 변환…")
-    texts, labels, meta = build_sentence_examples(records)
-    n_pos = sum(labels)
-    print(f"      문장 {len(texts)} (positive {n_pos} / negative {len(texts)-n_pos})")
-    if n_pos < 10:
-        print("      WARNING: positive 샘플이 너무 적음. error 데이터를 더 생성하세요.",
-              file=sys.stderr)
+    type_counts: dict[str, int] = {}
+    for r in records:
+        if r.get("kind") == "error":
+            t = r.get("error_type") or "unknown"
+            type_counts[t] = type_counts.get(t, 0) + 1
+    if type_counts:
+        print("      error_type 분포:")
+        for t, c in sorted(type_counts.items()):
+            print(f"        {t:20s} {c}")
+
+    print("[2/5] 문서 단위 데이터셋 변환…")
+    texts = [r.get("text", "") for r in records]
+    labels = [1 if r.get("kind") == "error" else 0 for r in records]
+    types = [r.get("error_type") for r in records]
+    print(f"      문서 {len(texts)} (positive {sum(labels)} / negative {len(labels)-sum(labels)})")
 
     print("[3/5] stratified 70/15/15 split…")
-    tr_x, tmp_x, tr_y, tmp_y = train_test_split(
-        texts, labels, test_size=0.30, stratify=labels, random_state=args.seed
+    idx = list(range(len(texts)))
+    tr_idx, tmp_idx = train_test_split(
+        idx, test_size=0.30, stratify=labels, random_state=args.seed
     )
-    val_x, te_x, val_y, te_y = train_test_split(
-        tmp_x, tmp_y, test_size=0.50, stratify=tmp_y, random_state=args.seed
+    val_idx, te_idx = train_test_split(
+        tmp_idx,
+        test_size=0.50,
+        stratify=[labels[i] for i in tmp_idx],
+        random_state=args.seed,
     )
-    print(f"      train {len(tr_x)} / val {len(val_x)} / test {len(te_x)}")
+    print(f"      train {len(tr_idx)} / val {len(val_idx)} / test {len(te_idx)}")
+
+    def _by(indices, src):
+        return [src[i] for i in indices]
+
+    tr_x = _by(tr_idx, texts); tr_y = _by(tr_idx, labels)
+    val_x = _by(val_idx, texts); val_y = _by(val_idx, labels)
+    te_x = _by(te_idx, texts); te_y = _by(te_idx, labels)
+    te_types = _by(te_idx, types)
 
     if args.save_splits:
         args.save_splits.parent.mkdir(parents=True, exist_ok=True)
         args.save_splits.write_text(
             json.dumps(
                 {
-                    "train": {"texts": tr_x, "labels": tr_y},
-                    "val": {"texts": val_x, "labels": val_y},
-                    "test": {"texts": te_x, "labels": te_y},
+                    "train_indices": tr_idx,
+                    "val_indices": val_idx,
+                    "test_indices": te_idx,
                     "seed": args.seed,
                 },
                 ensure_ascii=False,
@@ -205,9 +173,9 @@ def main() -> int:
         args.model_name, num_labels=2
     )
 
-    train_ds = SentenceDataset(tr_x, tr_y, tokenizer, args.max_length)
-    val_ds = SentenceDataset(val_x, val_y, tokenizer, args.max_length)
-    test_ds = SentenceDataset(te_x, te_y, tokenizer, args.max_length)
+    train_ds = DocumentDataset(tr_x, tr_y, tokenizer, args.max_length)
+    val_ds = DocumentDataset(val_x, val_y, tokenizer, args.max_length)
+    test_ds = DocumentDataset(te_x, te_y, tokenizer, args.max_length)
     collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
     training_args = TrainingArguments(
@@ -247,10 +215,24 @@ def main() -> int:
     print(json.dumps(metrics, indent=2))
 
     print("\n=== Confusion matrix ===")
-    cm = confusion_matrix(te_y, preds)
-    print(cm)
+    print(confusion_matrix(te_y, preds))
     print("\n=== Classification report ===")
-    print(classification_report(te_y, preds, target_names=["normal", "violation"]))
+    print(classification_report(te_y, preds, target_names=["normal", "error"]))
+
+    # 유형별 Recall
+    print("\n=== Error type 별 Recall (test set) ===")
+    per_type: dict[str, tuple[int, int]] = {}
+    for i, lbl in enumerate(te_y):
+        if lbl != 1:
+            continue
+        t = te_types[i] or "unknown"
+        tp, total = per_type.get(t, (0, 0))
+        if preds[i] == 1:
+            tp += 1
+        per_type[t] = (tp, total + 1)
+    for t, (tp, total) in sorted(per_type.items()):
+        recall = tp / total if total else 0.0
+        print(f"  {t:20s} {tp:>3d}/{total:>3d}  ({recall*100:.1f}%)")
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     tokenizer.save_pretrained(args.output_dir)
