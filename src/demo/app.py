@@ -1,13 +1,14 @@
-"""Streamlit 데모 UI — 채용공고 분석 + 이력서 검증 통합.
+"""Streamlit 데모 UI — 채용공고 분석 + 이력서 정합성 검증 통합.
 
 실행:
-  docker compose up -d ollama   # LLM 사용 시
+  docker compose up -d ollama     # LLM 추론 사용 시
   docker compose up demo
   → http://localhost:8501
 """
 from __future__ import annotations
 
 from html import escape
+from pathlib import Path
 
 import streamlit as st
 
@@ -18,6 +19,8 @@ from src.reverse_job.adapters.ollama_client import DEFAULT_MODEL, OllamaLLMClien
 from src.reverse_job.llm_reasoner import LLMReasoner
 from src.reverse_job.pipeline import ReverseJobPipeline
 
+BERT_MODEL_DIR = Path("data/bert_classifier")
+
 SAMPLE_JOB = """[백엔드 개발자 채용]
 - Python, Django, MySQL 3년 이상 경력
 - REST API 설계 경험 필수
@@ -26,8 +29,8 @@ SAMPLE_JOB = """[백엔드 개발자 채용]
 """
 
 SAMPLE_RESUME = """저는 2010년부터 Docker를 활용하여 대규모 인프라를 구축했습니다.
-3개월 만에 대규모 시스템 아키텍처를 단독으로 설계하고 10만 TPS를 처리하는 서비스를 완성했습니다.
-React 16과 Next.js 13을 2015년 프로젝트에 적용했습니다.
+신입 1개월 차에 전사 KPI 설계를 단독으로 주도했습니다.
+입사 후 2주 만에 10만 TPS 규모의 대규모 마이크로서비스 아키텍처를 단독 설계·구현했습니다.
 이후 Python과 Django 로 백엔드를 개발했고, AWS 환경에서 운영했습니다.
 """
 
@@ -44,25 +47,48 @@ def load_arm_transactions() -> list[list[str]]:
     ]
 
 
-def build_pipeline(use_llm: bool, model: str) -> IntegrationPipeline:
+@st.cache_resource
+def load_bert_detector(model_dir: str):
+    from src.logic_auditor.bert_detector import BertConsistencyDetector
+
+    return BertConsistencyDetector(model_dir=model_dir)
+
+
+def build_reverse_job_pipeline(use_llm: bool, model: str) -> ReverseJobPipeline:
     rj = ReverseJobPipeline(load_ner=False)
     if use_llm:
         client = OllamaLLMClient(model=model)
         rj.reasoner = LLMReasoner(client=client)
-    audit = LogicAuditorPipeline()
-    return IntegrationPipeline(reverse_job=rj, audit=audit)
+    return rj
 
 
-def highlight_violations(text: str, violations) -> str:
-    """위반된 문장 부분을 <mark> 로 감싸 HTML 반환."""
-    if not violations:
+def highlight_violations(text: str, snippets: list[str]) -> str:
+    """문자열 리스트의 각 구간을 본문에서 <mark> 로 감싸 HTML 반환."""
+    if not snippets:
         return f"<div style='line-height:1.7;'>{escape(text).replace(chr(10), '<br>')}</div>"
-    spans = sorted({v.snippet for v in violations}, key=len, reverse=True)
+    spans = sorted({s for s in snippets if s}, key=len, reverse=True)
     out = escape(text)
     for s in spans:
         out = out.replace(
             escape(s),
             f"<mark style='background-color:#ffe066;'>{escape(s)}</mark>",
+        )
+    return f"<div style='line-height:1.7;'>{out.replace(chr(10), '<br>')}</div>"
+
+
+def highlight_bert(text: str, bert_result) -> str:
+    """BERT 가 위반으로 판정한 문장만 빨간색 하이라이트."""
+    if not bert_result or not bert_result.sentence_predictions:
+        return f"<div style='line-height:1.7;'>{escape(text).replace(chr(10), '<br>')}</div>"
+    violators = sorted(
+        (p.sentence for p in bert_result.sentence_predictions if p.is_violation),
+        key=len, reverse=True,
+    )
+    out = escape(text)
+    for s in violators:
+        out = out.replace(
+            escape(s),
+            f"<mark style='background-color:#ffadad;'>{escape(s)}</mark>",
         )
     return f"<div style='line-height:1.7;'>{out.replace(chr(10), '<br>')}</div>"
 
@@ -92,41 +118,97 @@ def render_module_a(report: IntegrationReport) -> None:
     st.write(", ".join(union) if union else "_없음_")
 
 
-def render_module_b(resume_text: str, report: IntegrationReport) -> None:
+def render_module_b(
+    resume_text: str,
+    report: IntegrationReport,
+    bert_result=None,
+    bert_threshold: float = 0.5,
+) -> None:
+    rule_violation = bool(report.resume_audit.violations)
+    bert_violation = bert_result.is_violation if bert_result is not None else False
+    ensemble_violation = rule_violation or bert_violation
+
+    # 점수: Rule 기반은 신뢰도, BERT 는 확률
     score = report.resume_audit.trust_score
     color = "#28a745" if score >= 85 else ("#ffc107" if score >= 70 else "#dc3545")
 
     st.markdown(
         f"<div style='font-size:42px;font-weight:bold;color:{color};'>"
-        f"신뢰도 {score} / 100</div>",
+        f"Rule 신뢰도 {score} / 100</div>",
         unsafe_allow_html=True,
     )
     st.progress(score / 100)
 
-    if report.resume_audit.violations:
-        st.error(f"위반 {len(report.resume_audit.violations)}건 탐지")
-        for v in report.resume_audit.violations:
-            with st.expander(f"[{v.tech}] {v.kind} — {v.message}"):
-                st.write(f"**문장**: {v.snippet}")
-                st.write(
-                    f"**주장 연도**: {v.claimed_year}  /  "
-                    f"**실제 출시**: {v.actual_year}"
-                )
-    else:
-        st.success("탐지된 사실 모순 없음 ✓")
+    if bert_result is not None:
+        pct = bert_result.document_probability * 100
+        bert_color = "#dc3545" if bert_violation else "#28a745"
+        st.markdown(
+            f"<div style='font-size:24px;font-weight:bold;color:{bert_color};margin-top:8px;'>"
+            f"BERT 위반 확률 {pct:.1f}% (임계값 {bert_threshold*100:.0f}%)</div>",
+            unsafe_allow_html=True,
+        )
 
+    # Ensemble 평결
+    verdict_color = "#dc3545" if ensemble_violation else "#28a745"
+    verdict = "위반 감지" if ensemble_violation else "통과"
+    st.markdown(
+        f"<div style='padding:10px;border-radius:8px;background:{verdict_color}15;"
+        f"border-left:6px solid {verdict_color};margin:12px 0;'>"
+        f"<b>앙상블 평결:</b> <span style='color:{verdict_color};font-weight:bold;'>{verdict}</span>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.divider()
+    cols = st.columns(2)
+
+    with cols[0]:
+        st.markdown("##### 📐 Rule-based")
+        if report.resume_audit.violations:
+            for v in report.resume_audit.violations:
+                st.error(f"[{v.tech}] {v.kind}")
+                st.caption(v.message)
+                st.code(v.snippet, language=None)
+        else:
+            st.success("위반 없음")
+
+    with cols[1]:
+        st.markdown("##### 🤖 BERT")
+        if bert_result is None:
+            st.info("BERT 비활성화 (사이드바에서 활성화)")
+        elif bert_result.sentence_predictions:
+            for p in bert_result.sentence_predictions:
+                pct = p.probability * 100
+                if p.is_violation:
+                    st.error(f"위반 {pct:.0f}% — {p.sentence[:80]}…")
+                else:
+                    st.caption(f"정상 {pct:.0f}% — {p.sentence[:80]}…")
+        else:
+            st.success("위반 없음")
+
+    st.divider()
     if report.resume_audit.ai_detection is not None:
         ai = report.resume_audit.ai_detection
-        st.write(
-            f"**AI 생성 신호**  perplexity={ai.perplexity:.2f}  "
+        st.caption(
+            f"AI 생성 휴리스틱  perplexity={ai.perplexity:.2f}  "
             f"burstiness={ai.burstiness:.2f}  p(ai)={ai.ai_probability:.2f}"
         )
 
-    st.markdown("**위반 위치 하이라이트**")
-    st.markdown(
-        highlight_violations(resume_text, report.resume_audit.violations),
-        unsafe_allow_html=True,
-    )
+    st.markdown("##### 본문 하이라이트")
+    rule_html_col, bert_html_col = st.columns(2)
+    with rule_html_col:
+        st.caption("Rule-based (🟡 노란색)")
+        rule_snippets = [v.snippet for v in report.resume_audit.violations]
+        st.markdown(highlight_violations(resume_text, rule_snippets), unsafe_allow_html=True)
+    with bert_html_col:
+        st.caption("BERT (🔴 빨간색)")
+        if bert_result is not None:
+            st.markdown(highlight_bert(resume_text, bert_result), unsafe_allow_html=True)
+        else:
+            st.markdown(
+                f"<div style='line-height:1.7;color:#888;'>{escape(resume_text).replace(chr(10), '<br>')}</div>",
+                unsafe_allow_html=True,
+            )
 
 
 def render_integration(report: IntegrationReport) -> None:
@@ -149,16 +231,34 @@ def main() -> None:
     st.title("📄 Reverse Job Engineering + Logic Auditor")
     st.caption(
         "채용공고에서 암묵적 요구 역량을 추론(Module A)하고, "
-        "이력서·포트폴리오의 사실 모순을 탐지(Module B)하는 통합 NLP 파이프라인"
+        "이력서·포트폴리오의 정합성을 Rule + BERT 앙상블로 검증(Module B)하는 통합 NLP 파이프라인"
     )
 
     with st.sidebar:
         st.header("⚙️ 설정")
         use_llm = st.checkbox(
             "LLM 추론 활성화 (Ollama)", value=False,
-            help="활성화하면 ARM 결과에 LLM Chain-of-Thought 결과를 합집합. 응답 5~15초 소요.",
+            help="ARM 결과에 LLM Chain-of-Thought 결과를 합집합. 응답 5~15초.",
         )
         llm_model = st.text_input("LLM 모델", DEFAULT_MODEL)
+
+        st.divider()
+        bert_available = BERT_MODEL_DIR.exists()
+        use_bert = st.checkbox(
+            "BERT 정합성 검출 활성화 (KLUE-RoBERTa)",
+            value=bert_available,
+            disabled=not bert_available,
+            help=(
+                "Rule 이 못 잡는 의미적 정합성 위반(경험-기간, 신입-경영, "
+                "간접 시간 참조, 호환 불가 기술 조합)을 BERT 가 검출."
+            ),
+        )
+        if not bert_available:
+            st.caption("⚠️ data/bert_classifier 없음 — train_bert_classifier.py 먼저 실행")
+        bert_threshold = st.slider(
+            "BERT 임계값", min_value=0.1, max_value=0.95, value=0.5, step=0.05,
+            disabled=not (bert_available and use_bert),
+        )
 
         st.divider()
         st.header("📚 샘플")
@@ -202,21 +302,35 @@ def main() -> None:
         client = OllamaLLMClient(model=llm_model)
         if not client.healthcheck():
             st.warning(
-                f"Ollama 서비스에 연결 실패 ({client.host}). "
-                "LLM 없이 ARM-only 로 진행합니다."
+                f"Ollama 서비스 연결 실패 ({client.host}). LLM 없이 ARM-only 로 진행합니다."
             )
             use_llm = False
 
-    pipeline = build_pipeline(use_llm=use_llm, model=llm_model)
+    bert_detector = None
+    if use_bert and bert_available:
+        with st.spinner("BERT 모델 로딩…"):
+            try:
+                bert_detector = load_bert_detector(str(BERT_MODEL_DIR))
+                bert_detector.threshold = bert_threshold
+            except Exception as e:
+                st.warning(f"BERT 로딩 실패: {e}")
+                bert_detector = None
+
+    rj = build_reverse_job_pipeline(use_llm=use_llm, model=llm_model)
+    audit = LogicAuditorPipeline()
+    pipeline = IntegrationPipeline(reverse_job=rj, audit=audit)
 
     with st.spinner("분석 중…"):
         try:
-            report = pipeline.run(
-                job_text, resume_text, transactions=transactions
-            )
+            report = pipeline.run(job_text, resume_text, transactions=transactions)
         except Exception as e:
             st.error(f"분석 실패: {e}")
             return
+
+    bert_result = None
+    if bert_detector is not None:
+        with st.spinner("BERT 정합성 추론 중…"):
+            bert_result = bert_detector.predict_sentences(resume_text)
 
     tabs = st.tabs(
         ["📋 채용공고 분석 (Module A)", "🔍 이력서 검증 (Module B)", "🎯 통합 리포트"]
@@ -224,7 +338,7 @@ def main() -> None:
     with tabs[0]:
         render_module_a(report)
     with tabs[1]:
-        render_module_b(resume_text, report)
+        render_module_b(resume_text, report, bert_result, bert_threshold)
     with tabs[2]:
         render_integration(report)
 
