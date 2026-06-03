@@ -53,7 +53,9 @@ class ReverseJobPipeline:
         implicit_llm: list[str] = []
         if self.reasoner is not None:
             implicit_llm = self.reasoner.infer_implicit(
-                target_job, target_req.tech_stack
+                target_job,
+                target_req.tech_stack,
+                arm_candidates=implicit_arm,
             )
 
         union = sorted(set(implicit_arm) | set(implicit_llm))

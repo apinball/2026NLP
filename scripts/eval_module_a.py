@@ -86,7 +86,9 @@ def main() -> int:
             llm_implicit: list[str] = []
             if reasoner is not None:
                 try:
-                    llm_implicit = reasoner.infer_implicit(job.raw_text, explicit)
+                    llm_implicit = reasoner.infer_implicit(
+                        job.raw_text, explicit, arm_candidates=arm_implicit
+                    )
                 except Exception as e:
                     print(f"  [llm error] {e}", file=sys.stderr)
 
