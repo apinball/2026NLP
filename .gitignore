@@ -20,6 +20,7 @@ data/bert_training.jsonl
 data/bert_splits.json
 data/eval_module_b_all.json
 data/figures/
+data/embedding_cache.npz
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

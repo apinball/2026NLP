@@ -21,6 +21,7 @@ from statistics import mean
 from tqdm import tqdm
 
 from scripts.run_arm import is_it_job, job_skills
+from src.data.embedding_index import build_or_load
 from src.data.loaders import iter_jobs, iter_resumes
 from src.data.skill_index import build_skill_index
 from src.reverse_job.adapters.ollama_client import DEFAULT_MODEL, OllamaLLMClient
@@ -41,6 +42,23 @@ def main() -> int:
         "--out", type=Path, default=Path("data/eval_module_a.jsonl"), help="개별 결과 저장"
     )
     ap.add_argument("--no-llm", action="store_true", help="LLM 호출 건너뛰기 (ARM-only 측정)")
+    ap.add_argument(
+        "--use-embedding",
+        action="store_true",
+        help="SBERT 임베딩 기반 Recall 추가 측정 (의미 기반)",
+    )
+    ap.add_argument(
+        "--embedding-threshold",
+        type=float,
+        default=0.55,
+        help="임베딩 코사인 유사도 임계값",
+    )
+    ap.add_argument(
+        "--embedding-docs",
+        type=int,
+        default=1500,
+        help="임베딩 인덱스 빌드 시 자소서 sections 최대 수",
+    )
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
@@ -59,6 +77,12 @@ def main() -> int:
     sample_resumes = list(islice(iter_resumes(), args.resume_sample))
     skill_index = build_skill_index(resumes=sample_resumes)
     print(f"      indexed_docs={skill_index.total_docs}")
+
+    embedding_index = None
+    if args.use_embedding:
+        print(f"      [embedding] 임베딩 인덱스 로드 또는 빌드…")
+        embedding_index = build_or_load(max_docs=args.embedding_docs)
+        print(f"      embedding_chunks={len(embedding_index.texts)}")
 
     print(f"[3/4] 평가 대상 IT 공고 {args.sample}건 샘플링…")
     eligible = [j for j in it_jobs if len(j.raw_text) > 200]
@@ -109,6 +133,16 @@ def main() -> int:
                 "size_llm": len(llm_normalized),
                 "size_ensemble": len(ensemble),
             }
+            if embedding_index is not None:
+                row["embedding_recall_arm"] = embedding_index.recall_proxy(
+                    arm_implicit, threshold=args.embedding_threshold
+                )
+                row["embedding_recall_llm"] = embedding_index.recall_proxy(
+                    llm_normalized, threshold=args.embedding_threshold
+                )
+                row["embedding_recall_ensemble"] = embedding_index.recall_proxy(
+                    ensemble, threshold=args.embedding_threshold
+                )
             per_job.append(row)
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
             f.flush()
@@ -121,12 +155,33 @@ def main() -> int:
         return mean(vs) if vs else 0.0
 
     print("\n=== 변형별 평균 (sample={} jobs) ===".format(len(per_job)))
-    print(f"{'variant':10s}  {'avg recall':>12s}  {'avg size':>10s}")
-    print(f"{'-'*36}")
-    print(f"{'ARM':10s}  {_avg('recall_arm'):>12.3f}  {_avg('size_arm'):>10.1f}")
-    if reasoner:
-        print(f"{'LLM':10s}  {_avg('recall_llm'):>12.3f}  {_avg('size_llm'):>10.1f}")
-        print(f"{'Ensemble':10s}  {_avg('recall_ensemble'):>12.3f}  {_avg('size_ensemble'):>10.1f}")
+    if embedding_index is not None:
+        print(f"{'variant':10s}  {'kw recall':>12s}  {'emb recall':>12s}  {'avg size':>10s}")
+        print(f"{'-'*52}")
+        print(
+            f"{'ARM':10s}  {_avg('recall_arm'):>12.3f}  "
+            f"{_avg('embedding_recall_arm'):>12.3f}  {_avg('size_arm'):>10.1f}"
+        )
+        if reasoner:
+            print(
+                f"{'LLM':10s}  {_avg('recall_llm'):>12.3f}  "
+                f"{_avg('embedding_recall_llm'):>12.3f}  {_avg('size_llm'):>10.1f}"
+            )
+            print(
+                f"{'Ensemble':10s}  {_avg('recall_ensemble'):>12.3f}  "
+                f"{_avg('embedding_recall_ensemble'):>12.3f}  {_avg('size_ensemble'):>10.1f}"
+            )
+        print(
+            f"\n  kw recall  = 키워드 사전 SkillIndex 기반 (분모: 사전에 있는 출력)"
+            f"\n  emb recall = SBERT 임베딩 코사인 유사도 ≥ {args.embedding_threshold} 기반"
+        )
+    else:
+        print(f"{'variant':10s}  {'avg recall':>12s}  {'avg size':>10s}")
+        print(f"{'-'*36}")
+        print(f"{'ARM':10s}  {_avg('recall_arm'):>12.3f}  {_avg('size_arm'):>10.1f}")
+        if reasoner:
+            print(f"{'LLM':10s}  {_avg('recall_llm'):>12.3f}  {_avg('size_llm'):>10.1f}")
+            print(f"{'Ensemble':10s}  {_avg('recall_ensemble'):>12.3f}  {_avg('size_ensemble'):>10.1f}")
 
     return 0
 
