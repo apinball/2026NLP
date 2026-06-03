@@ -219,11 +219,74 @@ def render_module_b(
 
 
 def render_integration(report: IntegrationReport) -> None:
-    if report.skill_gap:
-        st.warning(f"**미보유 역량 ({len(report.skill_gap)})**")
-        st.write(", ".join(report.skill_gap))
-    else:
-        st.success("채용공고 요구역량을 모두 보유하고 있습니다 ✓")
+    sm = report.skill_match
+    match_pct = report.match_score
+    trust = report.trust_score
+    verdict_label, verdict_color = report.verdict()
+
+    # 상단 KPI 3종
+    cols = st.columns(3)
+    with cols[0]:
+        st.metric("매칭 점수", f"{match_pct} / 100")
+        st.progress(match_pct / 100)
+    with cols[1]:
+        st.metric("신뢰도 점수", f"{trust} / 100")
+        st.progress(trust / 100)
+    with cols[2]:
+        st.markdown(
+            f"<div style='padding:10px;border-radius:8px;"
+            f"background:{verdict_color}22;"
+            f"border-left:6px solid {verdict_color};height:90px;'>"
+            f"<div style='font-size:12px;color:#666;'>종합 평결</div>"
+            f"<div style='font-size:24px;font-weight:bold;color:{verdict_color};'>"
+            f"{verdict_label}</div></div>",
+            unsafe_allow_html=True,
+        )
+
+    st.divider()
+
+    # 매칭 / 부족 / 보너스 3분할
+    mc, ic, bc = st.columns(3)
+    with mc:
+        st.markdown(f"##### ✓ 매칭 ({len(sm.matched)})")
+        st.caption("요구역량 중 이력서에 등장한 것")
+        if sm.matched:
+            for s in sm.matched:
+                st.success(s)
+        else:
+            st.write("_없음_")
+    with ic:
+        st.markdown(f"##### ❌ 부족 ({len(sm.missing)})")
+        st.caption("요구역량인데 이력서에 없음")
+        if sm.missing:
+            for s in sm.missing:
+                st.error(s)
+        else:
+            st.write("_없음_")
+    with bc:
+        st.markdown(f"##### ➕ 추가 보유 ({len(sm.bonus)})")
+        st.caption("이력서에 있지만 요구되지 않음")
+        if sm.bonus:
+            for s in sm.bonus:
+                st.info(s)
+        else:
+            st.write("_없음_")
+
+    st.divider()
+    st.markdown("##### 📊 요약")
+    if sm.required:
+        st.write(
+            f"채용공고 요구 **{len(sm.required)}** 개 중 "
+            f"**{len(sm.matched)}** 개 매칭 → "
+            f"매칭 점수 **{match_pct}점**."
+        )
+    if sm.missing:
+        st.write(
+            f"부족한 핵심 역량: **{', '.join(sm.missing[:5])}**"
+            + (f" 외 {len(sm.missing) - 5}개" if len(sm.missing) > 5 else "")
+        )
+    if trust < 100:
+        st.write(f"이력서 신뢰도는 위반·AI 신호 반영 후 **{trust}점**.")
 
     with st.expander("전체 JSON 리포트"):
         st.json(report.to_dict())
