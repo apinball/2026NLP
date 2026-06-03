@@ -176,15 +176,22 @@ def render_module_b(
         st.markdown("##### 🤖 BERT")
         if bert_result is None:
             st.info("BERT 비활성화 (사이드바에서 활성화)")
-        elif bert_result.sentence_predictions:
+        elif bert_result.is_violation:
+            st.error(f"문서 위반 확률 {bert_result.document_probability*100:.1f}%")
+            st.caption("문장별 점수(참고용, 학습은 문서 단위로 진행):")
             for p in bert_result.sentence_predictions:
                 pct = p.probability * 100
                 if p.is_violation:
-                    st.error(f"위반 {pct:.0f}% — {p.sentence[:80]}…")
+                    st.write(f"🔴 {pct:>5.1f}% — {p.sentence[:80]}…")
                 else:
-                    st.caption(f"정상 {pct:.0f}% — {p.sentence[:80]}…")
+                    st.write(f"⚪ {pct:>5.1f}% — {p.sentence[:80]}…")
         else:
-            st.success("위반 없음")
+            st.success(f"정상 (위반 확률 {bert_result.document_probability*100:.1f}%)")
+            if bert_result.sentence_predictions:
+                st.caption("문장별 점수(참고용):")
+                for p in bert_result.sentence_predictions:
+                    pct = p.probability * 100
+                    st.write(f"⚪ {pct:>5.1f}% — {p.sentence[:80]}…")
 
     st.divider()
     if report.resume_audit.ai_detection is not None:
@@ -330,7 +337,11 @@ def main() -> None:
     bert_result = None
     if bert_detector is not None:
         with st.spinner("BERT 정합성 추론 중…"):
+            # 학습과 동일한 문서 단위 추론 + 문장별 보조 점수 (참고용)
             bert_result = bert_detector.predict_sentences(resume_text)
+            doc_result = bert_detector.predict(resume_text)
+            bert_result.document_probability = doc_result.document_probability
+            bert_result.is_violation = doc_result.is_violation
 
     tabs = st.tabs(
         ["📋 채용공고 분석 (Module A)", "🔍 이력서 검증 (Module B)", "🎯 통합 리포트"]

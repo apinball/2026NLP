@@ -16,6 +16,7 @@ data/wanted_raw.jsonl
 data/synthetic_resumes.jsonl
 data/eval_module_a.jsonl
 data/bert_classifier/
+data/bert_training.jsonl
 data/bert_splits.json
 data/eval_module_b_all.json
 data/figures/
