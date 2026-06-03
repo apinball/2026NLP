@@ -11,6 +11,13 @@ services:
       OLLAMA_HOST: http://ollama:11434
     tty: true
     stdin_open: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     command: python -m src.main --module all
 
   ollama:
