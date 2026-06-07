@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import json
+
+import pytest
+
+from src.logic_auditor.entity_extractor import EntityExtractor
 from src.logic_auditor.pipeline import LogicAuditorPipeline
 from src.logic_auditor.rule_based import RuleBasedAuditor
 
@@ -55,6 +60,33 @@ def test_feature_version_ignores_unrelated_technology_version() -> None:
         issue.evidence.get("kind") == "feature_version"
         for issue in report.issues
     )
+
+
+def test_feature_keyword_does_not_match_inside_word() -> None:
+    entities = EntityExtractor().extract("React 18에서 webhook 이벤트를 처리했습니다.")
+
+    assert not any(entity.entity_type == "FEATURE" for entity in entities)
+
+
+def test_invalid_feature_rule_config_fails_fast(tmp_path) -> None:
+    bad_rules = tmp_path / "bad_feature_rules.json"
+    bad_rules.write_text(
+        json.dumps(
+            [
+                {
+                    "feature": "Broken Feature",
+                    "tech": "React",
+                    "introduced_year": "not-a-year",
+                    "introduced_version": "18",
+                    "keywords": ["broken"],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="introduced_year"):
+        EntityExtractor(feature_rules_path=bad_rules)
 
 
 def test_exaggerated_scope_claim_detected() -> None:

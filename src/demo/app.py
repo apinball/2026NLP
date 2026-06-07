@@ -212,8 +212,9 @@ def render_module_b(
         if bert_result is not None:
             st.markdown(highlight_bert(resume_text, bert_result), unsafe_allow_html=True)
         else:
+            escaped_resume = escape(resume_text).replace(chr(10), "<br>")
             st.markdown(
-                f"<div style='line-height:1.7;color:#888;'>{escape(resume_text).replace(chr(10), '<br>')}</div>",
+                f"<div style='line-height:1.7;color:#888;'>{escaped_resume}</div>",
                 unsafe_allow_html=True,
             )
 

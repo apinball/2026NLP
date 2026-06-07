@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
+from typing import Any
 
 from src.logic_auditor.claim_extractor import ClaimExtractor
 from src.logic_auditor.entity_extractor import EntityExtractor
 from src.logic_auditor.models import AuditIssue, Claim, DetectedEntity, RuleAuditResult
 from src.logic_auditor.ontology import OntologyDB, TechEntry
 from src.logic_auditor.trust_score import calculate_trust_score
-
-_SENT_SPLIT = re.compile(r"(?<=[.!?。])\s+|\n+")
 
 
 @dataclass
@@ -20,6 +18,10 @@ class RuleViolation:
     snippet: str
     kind: str
     message: str
+    issue_type: str = ""
+    severity: str = ""
+    confidence: float = 0.0
+    evidence: dict[str, Any] | None = None
 
 
 SEVERITY_PENALTIES = {
@@ -294,6 +296,10 @@ def _issue_to_violation(issue: AuditIssue) -> RuleViolation:
         snippet=issue.highlight_text,
         kind=str(evidence.get("kind") or issue.issue_type.lower()),
         message=issue.message,
+        issue_type=issue.issue_type,
+        severity=issue.severity,
+        confidence=issue.confidence,
+        evidence=dict(evidence),
     )
 
 

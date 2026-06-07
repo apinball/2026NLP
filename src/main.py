@@ -59,9 +59,13 @@ def demo_logic_auditor(use_ml: bool) -> None:
     print("\n=== Logic Auditor ===")
     print(f"Trust score: {report.trust_score}/100")
     for v in report.violations:
-        print(
-            f"- [{v.tech}] claimed={v.claimed_year} actual={v.actual_year} :: {v.snippet}"
-        )
+        if v.actual_year:
+            print(
+                f"- [{v.tech}] claimed={v.claimed_year} "
+                f"actual={v.actual_year} :: {v.snippet}"
+            )
+        else:
+            print(f"- [{v.kind}] {v.message} :: {v.snippet}")
     if report.ai_detection is not None:
         ai = report.ai_detection
         print(

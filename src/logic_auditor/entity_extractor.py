@@ -82,7 +82,26 @@ def _load_feature_rules(path: Path) -> list[dict]:
     raw = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(raw, list):
         raise ValueError(f"feature rules must be a list: {path}")
-    return [dict(item) for item in raw]
+    rules: list[dict] = []
+    for index, item in enumerate(raw, start=1):
+        if not isinstance(item, dict):
+            raise ValueError(f"feature rule #{index} must be an object: {path}")
+        rule = dict(item)
+        for key in ("feature", "tech", "introduced_year", "introduced_version"):
+            if not str(rule.get(key) or "").strip():
+                raise ValueError(f"feature rule #{index} missing {key}: {path}")
+        try:
+            rule["introduced_year"] = int(rule["introduced_year"])
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"feature rule #{index} has invalid introduced_year: {path}"
+            ) from exc
+        keywords = rule.get("keywords")
+        if not isinstance(keywords, list) or not any(str(k).strip() for k in keywords):
+            raise ValueError(f"feature rule #{index} requires keywords: {path}")
+        rule["keywords"] = [str(k).strip() for k in keywords if str(k).strip()]
+        rules.append(rule)
+    return rules
 
 
 def _load_signal_rules(path: Path) -> dict[str, dict[str, str]]:
@@ -91,13 +110,21 @@ def _load_signal_rules(path: Path) -> dict[str, dict[str, str]]:
     raw = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
         raise ValueError(f"claim signal rules must be an object: {path}")
+    role_terms = raw.get("role_terms") or {}
+    scale_terms = raw.get("scale_terms") or {}
+    if not isinstance(role_terms, dict) or not isinstance(scale_terms, dict):
+        raise ValueError(f"claim signal terms must be objects: {path}")
     return {
-        "role_terms": {
-            str(k): str(v) for k, v in dict(raw.get("role_terms") or {}).items()
-        },
-        "scale_terms": {
-            str(k): str(v) for k, v in dict(raw.get("scale_terms") or {}).items()
-        },
+        "role_terms": _clean_signal_terms(role_terms),
+        "scale_terms": _clean_signal_terms(scale_terms),
+    }
+
+
+def _clean_signal_terms(raw: dict) -> dict[str, str]:
+    return {
+        str(keyword).strip(): str(normalized).strip()
+        for keyword, normalized in raw.items()
+        if str(keyword).strip() and str(normalized).strip()
     }
 
 
@@ -114,6 +141,15 @@ def _name_pattern(name: str) -> re.Pattern[str]:
         rf"(?:[{_KOREAN_PARTICLES}]{{1,2}}(?![{_KOREAN_CHAR}])|(?![{_KOREAN_CHAR}]))"
     )
     return re.compile(pattern, re.IGNORECASE)
+
+
+def _keyword_pattern(keyword: str) -> re.Pattern[str]:
+    if re.search(r"[가-힣]", keyword):
+        return _name_pattern(keyword)
+    return re.compile(
+        rf"(?<![a-zA-Z0-9.+#-]){re.escape(keyword)}(?![a-zA-Z0-9.+#-])",
+        re.IGNORECASE,
+    )
 
 
 def _overlaps(start: int, end: int, occupied: list[range]) -> bool:
@@ -182,10 +218,7 @@ def _keyword_entities(
     entities: list[DetectedEntity] = []
     lowered = text.lower()
     for keyword, normalized in keywords.items():
-        if re.search(r"[가-힣]", keyword):
-            pattern = _name_pattern(keyword)
-        else:
-            pattern = re.compile(re.escape(keyword.lower()), re.IGNORECASE)
+        pattern = _keyword_pattern(keyword)
         for match in pattern.finditer(lowered):
             entities.append(
                 DetectedEntity(
@@ -213,7 +246,7 @@ def _feature_entities(
             reverse=True,
         )
         for keyword in keywords:
-            pattern = re.compile(re.escape(keyword.lower()), re.IGNORECASE)
+            pattern = _keyword_pattern(keyword)
             for match in pattern.finditer(lowered):
                 if _overlaps(match.start(), match.end(), occupied):
                     continue
