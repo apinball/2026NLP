@@ -33,3 +33,43 @@ def test_pipeline_trust_score_drops_on_violation() -> None:
     clean = pipeline.run("2022년에 Docker로 인프라를 구축했습니다.")
     assert bad.trust_score < clean.trust_score
     assert clean.trust_score == 100
+
+
+def test_feature_version_incompatibility_detected() -> None:
+    text = "React 16에서 Server Components를 사용했습니다."
+    report = RuleBasedAuditor().audit_detailed(text)
+
+    assert report.trust_score < 100
+    assert any(
+        issue.issue_type == "VERSION_ERROR"
+        and issue.evidence["kind"] == "feature_version"
+        for issue in report.issues
+    )
+
+
+def test_feature_version_ignores_unrelated_technology_version() -> None:
+    text = "Next.js 14와 React Hooks를 활용했습니다."
+    report = RuleBasedAuditor().audit_detailed(text)
+
+    assert not any(
+        issue.evidence.get("kind") == "feature_version"
+        for issue in report.issues
+    )
+
+
+def test_exaggerated_scope_claim_detected() -> None:
+    text = "3개월 만에 대규모 금융권 시스템 아키텍처를 단독으로 설계하고 운영까지 완료했습니다."
+    report = RuleBasedAuditor().audit_detailed(text)
+
+    assert report.trust_score < 100
+    assert any(issue.issue_type == "EXAGGERATION_SUSPECTED" for issue in report.issues)
+
+
+def test_pipeline_exposes_claims_and_issues() -> None:
+    report = LogicAuditorPipeline().run(
+        "2010년 Docker를 사용했습니다.\nReact 16에서 Server Components를 사용했습니다."
+    )
+
+    assert len(report.claims) == 2
+    assert len(report.issues) >= 2
+    assert {claim.claim_id for claim in report.claims} == {"c1", "c2"}

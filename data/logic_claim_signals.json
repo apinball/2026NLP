@@ -1,0 +1,28 @@
+{
+  "role_terms": {
+    "단독": "solo",
+    "혼자": "solo",
+    "1인": "solo",
+    "전체": "full_ownership",
+    "리딩": "leadership",
+    "주도": "leadership",
+    "아키텍트": "architect",
+    "설계": "design",
+    "운영": "operation"
+  },
+  "scale_terms": {
+    "대규모": "large_scale",
+    "고트래픽": "high_traffic",
+    "글로벌": "global",
+    "수백만": "million_users",
+    "수천만": "ten_million_users",
+    "전사": "company_wide",
+    "금융권": "regulated_domain",
+    "10만": "large_volume",
+    "100만": "large_volume",
+    "tps": "throughput",
+    "msa": "msa",
+    "마이크로서비스": "msa",
+    "분산 시스템": "distributed_system"
+  }
+}

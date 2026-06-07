@@ -1,0 +1,30 @@
+[
+  {
+    "feature": "Server Components",
+    "tech": "React",
+    "introduced_year": 2022,
+    "introduced_version": "18",
+    "keywords": ["server components", "서버 컴포넌트"]
+  },
+  {
+    "feature": "Hooks",
+    "tech": "React",
+    "introduced_year": 2019,
+    "introduced_version": "16.8",
+    "keywords": ["hooks", "hook", "훅"]
+  },
+  {
+    "feature": "App Router",
+    "tech": "Next.js",
+    "introduced_year": 2022,
+    "introduced_version": "13",
+    "keywords": ["app router", "앱 라우터"]
+  },
+  {
+    "feature": "Composition API",
+    "tech": "Vue",
+    "introduced_year": 2020,
+    "introduced_version": "3",
+    "keywords": ["composition api", "컴포지션 api"]
+  }
+]

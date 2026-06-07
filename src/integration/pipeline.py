@@ -85,6 +85,30 @@ class IntegrationReport:
                     }
                     for v in self.resume_audit.violations
                 ],
+                "issues": [
+                    {
+                        "issue_id": issue.issue_id,
+                        "claim_id": issue.claim_id,
+                        "issue_type": issue.issue_type,
+                        "severity": issue.severity,
+                        "confidence": issue.confidence,
+                        "highlight_text": issue.highlight_text,
+                        "message": issue.message,
+                        "evidence": issue.evidence,
+                        "penalty": issue.penalty,
+                    }
+                    for issue in self.resume_audit.issues
+                ],
+                "claims": [
+                    {
+                        "claim_id": claim.claim_id,
+                        "claim_text": claim.claim_text,
+                        "claim_type": claim.claim_type,
+                        "tech_mentions": list(claim.tech_mentions),
+                        "year_mentions": list(claim.year_mentions),
+                    }
+                    for claim in self.resume_audit.claims
+                ],
                 "ai_signal": (
                     {
                         "perplexity": self.resume_audit.ai_detection.perplexity,

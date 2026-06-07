@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from src.logic_auditor.ml_detector import AIDetectionResult, AIGenerationDetector
+from src.logic_auditor.models import AuditIssue, Claim
 from src.logic_auditor.rule_based import RuleBasedAuditor, RuleViolation
 
 
@@ -12,6 +13,8 @@ class AuditReport:
     ai_detection: AIDetectionResult | None = None
     trust_score: int = 100
     suspect_spans: list[str] = field(default_factory=list)
+    issues: list[AuditIssue] = field(default_factory=list)
+    claims: list[Claim] = field(default_factory=list)
 
 
 class LogicAuditorPipeline:
@@ -30,13 +33,23 @@ class LogicAuditorPipeline:
         self.ai_detector = ai_detector
 
     def run(self, text: str) -> AuditReport:
-        violations = self.rule_auditor.audit(text)
+        if hasattr(self.rule_auditor, "audit_detailed"):
+            detailed = self.rule_auditor.audit_detailed(text)
+            violations = self.rule_auditor.issues_to_violations(detailed.issues)
+            rule_score = detailed.trust_score
+            issues = list(detailed.issues)
+            claims = list(detailed.claims)
+        else:
+            violations = self.rule_auditor.audit(text)
+            rule_score = 100 - min(
+                self.MAX_RULE_PENALTY,
+                self.PENALTY_PER_VIOLATION * len(violations),
+            )
+            issues = []
+            claims = []
         ai_result = self.ai_detector.score(text) if self.ai_detector else None
 
-        score = 100
-        score -= min(
-            self.MAX_RULE_PENALTY, self.PENALTY_PER_VIOLATION * len(violations)
-        )
+        score = rule_score
         if ai_result is not None:
             score -= int(round(ai_result.ai_probability * self.MAX_ML_PENALTY))
         score = max(0, score)
@@ -48,4 +61,6 @@ class LogicAuditorPipeline:
             ai_detection=ai_result,
             trust_score=score,
             suspect_spans=spans,
+            issues=issues,
+            claims=claims,
         )
