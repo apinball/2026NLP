@@ -5,10 +5,13 @@ Module B 의 ML 축. 학습은 문서 단위로 진행되었으므로 추론도 
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from src.logic_auditor.rule_based import _SENT_SPLIT
+# rule_based.py 가 claim 단위 모델로 재설계되면서 _SENT_SPLIT 정규식이 사라졌으므로
+# 추론기 자체에 동일한 분리 규칙을 보유한다.
+_SENT_SPLIT = re.compile(r"(?<=[.!?。])\s+|\n+")
 
 
 @dataclass
